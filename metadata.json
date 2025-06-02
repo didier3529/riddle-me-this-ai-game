@@ -1,0 +1,5 @@
+{
+  "name": "Riddle Me This AI Game",
+  "description": "A fun riddle game where players solve AI-generated riddles, using clues strategically to maximize their score. Play solo or with a friend!",
+  "requestFramePermissions": []
+}
