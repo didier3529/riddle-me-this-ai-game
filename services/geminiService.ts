@@ -1,19 +1,13 @@
 
-import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { RiddleData, AnswerEvaluation, AIServiceError } from '../types';
-import { GEMINI_TEXT_MODEL, riddleGenerationPrompt, answerCheckingPrompt } from '../constants';
+import { riddleGenerationPrompt, answerCheckingPrompt } from '../constants';
 
 // Ensure API_KEY is handled by the environment.
-// In a real production app, this key should not be exposed client-side without a proxy.
-const API_KEY = process.env.API_KEY;
+const API_KEY = process.env.VITE_OPENROUTER_API_KEY || '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';
 
 if (!API_KEY) {
-  console.error("API_KEY for Gemini is not set. Please set the API_KEY environment variable.");
-  // Potentially throw an error or have a fallback, but for this exercise, we'll log and continue.
-  // The app will likely fail API calls without it.
+  console.error("API_KEY for OpenRouter is not set. Please set the API_KEY environment variable.");
 }
-
-const ai = new GoogleGenAI({ apiKey: API_KEY! }); // Use non-null assertion assuming it's set by env
 
 function parseGeminiJsonResponse<T,>(responseText: string): T | null {
   let jsonStr = responseText.trim();
@@ -83,15 +77,34 @@ export const fetchRiddleAndClues = async (sessionId: string = 'default'): Promis
   
   while (attempts < maxAttempts) {
     try {
-      const response: GenerateContentResponse = await ai.models.generateContent({
-        model: GEMINI_TEXT_MODEL,
-        contents: [{role: "user", parts: [{text: riddleGenerationPrompt}]}],
-        config: {
-          responseMimeType: "application/json",
-        }
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${API_KEY}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'http://localhost:5173',
+          'X-Title': 'Riddle Me This Game',
+        },
+        body: JSON.stringify({
+          model: 'openai/gpt-3.5-turbo',
+          messages: [
+            {
+              role: 'user',
+              content: riddleGenerationPrompt
+            }
+          ],
+          temperature: 0.7,
+        }),
       });
+
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const responseText = data.choices[0]?.message?.content || "";
       
-      const parsedData = parseGeminiJsonResponse<RiddleData>(response.text || "");
+      const parsedData = parseGeminiJsonResponse<RiddleData>(responseText);
       if (parsedData && parsedData.riddle && parsedData.answer && Array.isArray(parsedData.clues) && parsedData.clues.length === 4) {
         
         // Create a key for this riddle
@@ -115,7 +128,7 @@ export const fetchRiddleAndClues = async (sessionId: string = 'default'): Promis
         return parsedData;
       }
       
-      console.error("Invalid riddle data structure received:", parsedData, "Raw text:", response.text);
+      console.error("Invalid riddle data structure received:", parsedData, "Raw text:", responseText);
       attempts++;
     } catch (error) {
       console.error("Error fetching riddle:", error);
@@ -130,19 +143,39 @@ export const checkUserAnswer = async (riddle: string, correctAnswer: string, use
   if (!API_KEY) return { message: "API Key not configured." };
   try {
     const prompt = answerCheckingPrompt(riddle, correctAnswer, userAnswer);
-    const response: GenerateContentResponse = await ai.models.generateContent({
-      model: GEMINI_TEXT_MODEL,
-      contents: [{role: "user", parts: [{text: prompt}]}],
-      config: {
-        responseMimeType: "application/json",
-      }
+    
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'http://localhost:5173',
+        'X-Title': 'Riddle Me This Game',
+      },
+      body: JSON.stringify({
+        model: 'openai/gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.1,
+      }),
     });
 
-    const parsedData = parseGeminiJsonResponse<AnswerEvaluation>(response.text || "");
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const responseText = data.choices[0]?.message?.content || "";
+
+    const parsedData = parseGeminiJsonResponse<AnswerEvaluation>(responseText);
     if (parsedData && typeof parsedData.isCorrect === 'boolean') {
       return parsedData;
     }
-    console.error("Invalid answer evaluation structure:", parsedData, "Raw text:", response.text);
+    console.error("Invalid answer evaluation structure:", parsedData, "Raw text:", responseText);
     return { message: "Failed to evaluate the answer. The AI's response was not in the expected format." };
   } catch (error) {
     console.error("Error checking answer:", error);

@@ -44,6 +44,14 @@ const App: React.FC = () => {
     setIsLoading(true);
     resetRiddleState(); // Reset relevant state before loading
 
+    // Check if API key is available
+    const apiKey = process.env.VITE_OPENROUTER_API_KEY || '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';
+    if (!apiKey || apiKey === 'your_openrouter_api_key_here') {
+      setApiError("API Key not configured. Please set your VITE_OPENROUTER_API_KEY in the .env file.");
+      setIsLoading(false);
+      return;
+    }
+
     // Pass the current game session to help track riddle uniqueness
     const result = await fetchRiddleAndClues(gameSession);
     if ('message' in result) { 
@@ -370,7 +378,7 @@ const App: React.FC = () => {
             2 Players (Simultaneous)
           </button>
         </div>
-         { typeof process.env.API_KEY === 'undefined' || !process.env.API_KEY ? <p className="mt-6 text-sm text-yellow-500">Warning: API Key for Gemini is not configured. The game may not function correctly.</p> : null}
+        <p className="mt-6 text-sm text-green-500">✅ Ready to play!</p>
       </div>
     );
   }

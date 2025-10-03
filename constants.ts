@@ -2,7 +2,7 @@
 export const TOTAL_RIDDLES = 5;
 export const POINTS_PER_RIDDLE = 20;
 export const POINTS_PER_CLUE = 5;
-export const GEMINI_TEXT_MODEL = "gemini-2.5-flash-preview-04-17";
+// Using OpenAI GPT-3.5-turbo instead of Gemini
 
 // Add uniqueness requirement to the prompt
 export const riddleGenerationPrompt = `
