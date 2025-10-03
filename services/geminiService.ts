@@ -1,6 +1,6 @@
 
-import { RiddleData, AnswerEvaluation, AIServiceError } from '../types';
-import { riddleGenerationPrompt, answerCheckingPrompt } from '../constants';
+import { answerCheckingPrompt, demoRiddles, riddleGenerationPrompt } from '../constants';
+import { AIServiceError, AnswerEvaluation, RiddleData } from '../types';
 
 // Ensure API_KEY is handled by the environment.
 const API_KEY = process.env.VITE_OPENROUTER_API_KEY || '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';
@@ -63,7 +63,10 @@ const isSimilarToExisting = (newRiddle: RiddleData): boolean => {
 };
 
 export const fetchRiddleAndClues = async (sessionId: string = 'default'): Promise<RiddleData | AIServiceError> => {
-  if (!API_KEY) return { message: "API Key not configured." };
+  if (!API_KEY || API_KEY === 'your_openrouter_api_key_here') {
+    console.log("API Key not configured, using demo mode");
+    return getDemoRiddle(sessionId);
+  }
   
   // Get or create the set of riddles for this session
   if (!riddlesBySession.has(sessionId)) {
@@ -77,6 +80,11 @@ export const fetchRiddleAndClues = async (sessionId: string = 'default'): Promis
   
   while (attempts < maxAttempts) {
     try {
+      console.log(`Attempting to fetch riddle (attempt ${attempts + 1}/${maxAttempts})...`);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
       const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -95,14 +103,21 @@ export const fetchRiddleAndClues = async (sessionId: string = 'default'): Promis
           ],
           temperature: 0.7,
         }),
+        signal: controller.signal
       });
 
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        console.error(`API Error ${response.status}:`, errorText);
+        throw new Error(`API error: ${response.status} ${response.statusText}. ${errorText}`);
       }
 
       const data = await response.json();
       const responseText = data.choices[0]?.message?.content || "";
+      
+      console.log("Raw API response:", responseText);
       
       const parsedData = parseGeminiJsonResponse<RiddleData>(responseText);
       if (parsedData && parsedData.riddle && parsedData.answer && Array.isArray(parsedData.clues) && parsedData.clues.length === 4) {
@@ -125,6 +140,7 @@ export const fetchRiddleAndClues = async (sessionId: string = 'default'): Promis
         // Also add to global cache to prevent repeats across sessions
         previousRiddles.add(riddleKey);
         
+        console.log("Successfully fetched new riddle:", parsedData.riddle);
         return parsedData;
       }
       
@@ -132,15 +148,57 @@ export const fetchRiddleAndClues = async (sessionId: string = 'default'): Promis
       attempts++;
     } catch (error) {
       console.error("Error fetching riddle:", error);
+      if (error instanceof Error && error.name === 'AbortError') {
+        return { message: "Request timed out. Please check your internet connection and try again." };
+      }
       attempts++;
     }
   }
   
-  return { message: "Failed to fetch a unique riddle after multiple attempts. Please try again." };
+  // If API fails, fall back to demo mode
+  console.log("API failed, falling back to demo mode");
+  return getDemoRiddle(sessionId);
+};
+
+// Demo mode function to provide fallback riddles
+const getDemoRiddle = (sessionId: string): RiddleData | AIServiceError => {
+  // Get or create the set of riddles for this session
+  if (!riddlesBySession.has(sessionId)) {
+    riddlesBySession.set(sessionId, new Set());
+  }
+  const sessionRiddles = riddlesBySession.get(sessionId)!;
+  
+  // Find a demo riddle that hasn't been used in this session
+  for (const demoRiddle of demoRiddles) {
+    const riddleKey = JSON.stringify({
+      riddle: demoRiddle.riddle,
+      answer: demoRiddle.answer
+    });
+    
+    if (!sessionRiddles.has(riddleKey)) {
+      sessionRiddles.add(riddleKey);
+      console.log("Using demo riddle:", demoRiddle.riddle);
+      return demoRiddle;
+    }
+  }
+  
+  // If all demo riddles have been used, reset the session and use the first one
+  sessionRiddles.clear();
+  const firstDemoRiddle = demoRiddles[0];
+  sessionRiddles.add(JSON.stringify({
+    riddle: firstDemoRiddle.riddle,
+    answer: firstDemoRiddle.answer
+  }));
+  
+  console.log("Demo riddles exhausted, restarting with first riddle");
+  return firstDemoRiddle;
 };
 
 export const checkUserAnswer = async (riddle: string, correctAnswer: string, userAnswer: string): Promise<AnswerEvaluation | AIServiceError> => {
-  if (!API_KEY) return { message: "API Key not configured." };
+  if (!API_KEY || API_KEY === 'your_openrouter_api_key_here') {
+    console.log("API Key not configured, using demo mode for answer checking");
+    return checkDemoAnswer(correctAnswer, userAnswer);
+  }
   try {
     const prompt = answerCheckingPrompt(riddle, correctAnswer, userAnswer);
     
@@ -179,8 +237,23 @@ export const checkUserAnswer = async (riddle: string, correctAnswer: string, use
     return { message: "Failed to evaluate the answer. The AI's response was not in the expected format." };
   } catch (error) {
     console.error("Error checking answer:", error);
-    return { message: `Error checking answer: ${error instanceof Error ? error.message : String(error)}` };
+    // Fall back to demo mode if API fails
+    console.log("API failed for answer checking, using demo mode");
+    return checkDemoAnswer(correctAnswer, userAnswer);
   }
+};
+
+// Demo mode answer checking
+const checkDemoAnswer = (correctAnswer: string, userAnswer: string): AnswerEvaluation => {
+  const normalizedCorrect = correctAnswer.toLowerCase().trim();
+  const normalizedUser = userAnswer.toLowerCase().trim();
+  
+  // Simple similarity check
+  const isCorrect = normalizedUser === normalizedCorrect || 
+                   normalizedCorrect.includes(normalizedUser) ||
+                   normalizedUser.includes(normalizedCorrect);
+  
+  return { isCorrect };
 };
     
 

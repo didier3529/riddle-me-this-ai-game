@@ -41,4 +41,62 @@ Respond with a JSON object with the following exact structure:
 }
 Do not include any explanatory text outside of the JSON structure.
 `;
+
+// Demo riddles for fallback mode when API is unavailable
+export const demoRiddles: Array<{
+  riddle: string;
+  answer: string;
+  clues: string[];
+}> = [
+  {
+    riddle: "I speak without a mouth and hear without ears. I have no body, but come alive with wind. What am I?",
+    answer: "echo",
+    clues: [
+      "I'm a sound phenomenon",
+      "I repeat what you say",
+      "I need a surface to bounce off",
+      "I'm what you hear in empty spaces"
+    ]
+  },
+  {
+    riddle: "The more you take, the more you leave behind. What am I?",
+    answer: "footsteps",
+    clues: [
+      "I'm related to walking",
+      "I mark where you've been",
+      "I disappear over time",
+      "I'm made by feet"
+    ]
+  },
+  {
+    riddle: "I have cities, but no houses. I have mountains, but no trees. I have water, but no fish. What am I?",
+    answer: "map",
+    clues: [
+      "I show geographical features",
+      "I help you navigate",
+      "I'm flat and portable",
+      "I represent real places"
+    ]
+  },
+  {
+    riddle: "I'm tall when I'm young, and short when I'm old. What am I?",
+    answer: "candle",
+    clues: [
+      "I provide light",
+      "I'm made of wax",
+      "I get shorter as I burn",
+      "I have a wick"
+    ]
+  },
+  {
+    riddle: "What has keys but no locks, space but no room, and you can enter but not go inside?",
+    answer: "keyboard",
+    clues: [
+      "I'm used for typing",
+      "I have letters and numbers",
+      "I'm connected to computers",
+      "I have keys that aren't for doors"
+    ]
+  }
+];
     

@@ -1,10 +1,10 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { GameState, RiddleData, PlayerScore, AnswerEvaluation } from './types';
-import { TOTAL_RIDDLES, POINTS_PER_RIDDLE, POINTS_PER_CLUE } from './constants';
-import { fetchRiddleAndClues, checkUserAnswer } from './services/geminiService';
+import React, { useCallback, useEffect, useState } from 'react';
 import LoadingSpinner from './components/LoadingSpinner';
 import Modal from './components/Modal';
+import { POINTS_PER_CLUE, POINTS_PER_RIDDLE, TOTAL_RIDDLES } from './constants';
+import { checkUserAnswer, fetchRiddleAndClues } from './services/geminiService';
+import { AnswerEvaluation, GameState, PlayerScore, RiddleData } from './types';
 
 const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>(GameState.NotStarted);
@@ -29,6 +29,7 @@ const App: React.FC = () => {
   const [feedbackModalTitle, setFeedbackModalTitle] = useState<string>("");
   const [feedbackModalMessage, setFeedbackModalMessage] = useState<string>("");
   const [gameSession, setGameSession] = useState<string>(Date.now().toString());
+  const [isDemoMode, setIsDemoMode] = useState<boolean>(false);
 
   const resetRiddleState = () => {
     setIsGuessSubmitted(false);
@@ -59,6 +60,9 @@ const App: React.FC = () => {
     } else { 
       setCurrentRiddleData(result);
       setRevealedClues(new Array(result.clues.length).fill(false));
+      // Check if we're in demo mode by looking at console logs or API key status
+      const apiKey = process.env.VITE_OPENROUTER_API_KEY || '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';
+      setIsDemoMode(!apiKey || apiKey === 'your_openrouter_api_key_here');
     }
     setIsLoading(false);
   }, [gameSession]);
@@ -189,13 +193,30 @@ const App: React.FC = () => {
     if (apiError && !currentRiddleData) { 
       return <div className="text-center p-8">
         <h2 className="text-2xl text-red-400 mb-4">Oops! Something went wrong.</h2>
-        <p className="text-slate-300 mb-6">{apiError}</p>
-        <button
-          onClick={loadNewRiddle}
-          className="bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-semibold py-2 px-6 rounded-md transition-colors"
-        >
-          Try Again
-        </button>
+        <p className="text-slate-300 mb-4">{apiError}</p>
+        <div className="bg-slate-700 p-4 rounded-md mb-6 text-left">
+          <h3 className="text-lg font-semibold text-yellow-400 mb-2">Troubleshooting:</h3>
+          <ul className="text-sm text-slate-300 space-y-1">
+            <li>• Check your internet connection</li>
+            <li>• Verify API key is set in .env.local file</li>
+            <li>• Open browser console (F12) for detailed error messages</li>
+            <li>• Try refreshing the page</li>
+          </ul>
+        </div>
+        <div className="space-x-4">
+          <button
+            onClick={loadNewRiddle}
+            className="bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-semibold py-2 px-6 rounded-md transition-colors"
+          >
+            Try Again
+          </button>
+          <button
+            onClick={handleRestart}
+            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-md transition-colors"
+          >
+            Restart Game
+          </button>
+        </div>
       </div>;
     }
     if (!currentRiddleData) return <div className="flex flex-col items-center justify-center h-64"><LoadingSpinner size="w-16 h-16" /><p className="mt-4 text-lg text-sky-300">Preparing the game...</p></div>;
@@ -339,6 +360,7 @@ const App: React.FC = () => {
       <div className="bg-slate-900/70 backdrop-blur-sm p-4 rounded-lg shadow-md mb-6 ring-1 ring-slate-700">
         <h3 className="text-xl font-semibold text-center text-sky-400 mb-3">
           Riddle {Math.min(totalRiddlesPlayedInGame + 1, TOTAL_RIDDLES)} of {TOTAL_RIDDLES}
+          {isDemoMode && <span className="ml-2 text-xs bg-yellow-500 text-yellow-900 px-2 py-1 rounded">DEMO MODE</span>}
         </h3>
         <div className={`grid ${numPlayers === 2 ? 'grid-cols-2 gap-4' : 'grid-cols-1'} text-center`}>
           <div>
