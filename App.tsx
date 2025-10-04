@@ -448,6 +448,24 @@ const App: React.FC = () => {
          <p className="text-xl text-slate-300 mb-1">Player 1: {p1FinalScore} points</p>
         {numPlayers === 2 && <p className="text-xl text-slate-300 mb-4">Player 2: {p2FinalScore} points</p>}
         {numPlayers === 1 && <p className="text-xl text-slate-300 mb-4">Final Score: {p1FinalScore} points</p>}
+        
+        {/* Prize Claim Section */}
+        <div className="mt-6 p-4 bg-green-500 rounded text-center">
+          <h2 className="text-2xl text-white mb-2">
+            Congrats, {numPlayers === 1 ? 'Player 1' : (scores.player1 > scores.player2 ? 'Player 1' : 'Player 2')} Wins!
+          </h2>
+          {connected ? (
+            <button
+              onClick={() => console.log('Claim Prize clicked')} // Placeholder, we'll add logic later
+              className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+            >
+              Claim Pump.fun Fees Prize!
+            </button>
+          ) : (
+            <p className="text-white">Connect wallet to claim prize!</p>
+          )}
+        </div>
+        
         <button
           onClick={handleRestart}
           className="mt-6 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg text-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-50"
@@ -461,23 +479,20 @@ const App: React.FC = () => {
   return (
     <div className="bg-slate-800/80 backdrop-blur-md p-6 sm:p-8 rounded-xl shadow-2xl w-full ring-1 ring-slate-700">
       {/* Wallet Status Bar */}
-      <div className="flex justify-between items-center mb-4 p-3 bg-slate-700/50 rounded-lg">
-        <div className="flex items-center space-x-3">
+      <div className="flex justify-between items-center mb-4 p-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg">
+        <h1 className="text-white text-lg font-bold">Riddle Me This!</h1>
+        <div className="flex items-center gap-2">
           {connected && publicKey ? (
             <>
               <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-              <span className="text-sm text-slate-300">
-                Wallet: {publicKey.toString().slice(0, 8)}...{publicKey.toString().slice(-8)}
+              <span className="text-white text-sm">
+                Connected: {publicKey?.toBase58().slice(0, 4)}...{publicKey?.toBase58().slice(-4)}
               </span>
             </>
           ) : (
-            <>
-              <div className="w-3 h-3 bg-red-400 rounded-full"></div>
-              <span className="text-sm text-slate-400">Wallet not connected</span>
-            </>
+              <span className="text-yellow-300 text-sm">Connect Wallet to Play!</span>
           )}
-        </div>
-        <WalletMultiButton className="!bg-gradient-to-r !from-purple-500 !to-pink-500 hover:!from-purple-600 hover:!to-pink-600 !border-0 !rounded-md !font-semibold !text-white !text-sm !py-2 !px-4" />
+          <WalletMultiButton className="bg-white text-blue-500 px-2 py-1 rounded" />
       </div>
 
       <Scoreboard />
