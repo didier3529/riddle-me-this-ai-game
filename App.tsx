@@ -7,6 +7,7 @@ import Modal from './components/Modal';
 import { POINTS_PER_CLUE, POINTS_PER_RIDDLE, TOTAL_RIDDLES } from './constants';
 import { checkUserAnswer, fetchRiddleAndClues } from './services/geminiService';
 import { AnswerEvaluation, GameState, PlayerScore, RiddleData } from './types';
+import { setWinner, claimPrize, getVaultBalance } from './solana/gameClient';
 
 const App: React.FC = () => {
   const { publicKey, connected, connecting } = useWallet();
@@ -33,6 +34,7 @@ const App: React.FC = () => {
   const [feedbackModalMessage, setFeedbackModalMessage] = useState<string>("");
   const [gameSession, setGameSession] = useState<string>(Date.now().toString());
   const [isDemoMode, setIsDemoMode] = useState<boolean>(false);
+  const [prizeBalance, setPrizeBalance] = useState<number>(0);
 
   const resetRiddleState = () => {
     setIsGuessSubmitted(false);
@@ -43,6 +45,21 @@ const App: React.FC = () => {
     setActivePlayerForAnswer(null);
     setApiError(null);
   };
+
+  // Fetch vault balance on component mount
+  useEffect(() => {
+    getVaultBalance().then(setPrizeBalance).catch(console.error);
+  }, []);
+
+  // Team wallet check - replace with your actual team wallet address
+  const isTeamWallet = publicKey?.toBase58() === 'YourTeamWalletAddress'; // Replace with your team's public key
+  
+  // Set winner when game ends (only team wallet can do this)
+  useEffect(() => {
+    if (gameState === GameState.GameOver && publicKey && isTeamWallet && wallet) {
+      setWinner(wallet, publicKey).catch(console.error);
+    }
+  }, [gameState, publicKey, isTeamWallet, wallet]);
 
 
   const loadNewRiddle = useCallback(async () => {
@@ -454,12 +471,14 @@ const App: React.FC = () => {
           <h2 className="text-2xl text-white mb-2">
             Congrats, {numPlayers === 1 ? 'Player 1' : (scores.player1 > scores.player2 ? 'Player 1' : 'Player 2')} Wins!
           </h2>
+          <p className="text-white mb-2">Prize Pot: {prizeBalance.toFixed(4)} SOL</p>
           {connected ? (
             <button
-              onClick={() => console.log('Claim Prize clicked')} // Placeholder, we'll add logic later
+              onClick={() => wallet && claimPrize(wallet).catch(console.error)}
               className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+              disabled={!publicKey}
             >
-              Claim Pump.fun Fees Prize!
+              Claim Prize!
             </button>
           ) : (
             <p className="text-white">Connect wallet to claim prize!</p>
