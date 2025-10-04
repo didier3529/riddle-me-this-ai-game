@@ -1,5 +1,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import LoadingSpinner from './components/LoadingSpinner';
 import Modal from './components/Modal';
 import { POINTS_PER_CLUE, POINTS_PER_RIDDLE, TOTAL_RIDDLES } from './constants';
@@ -7,6 +9,7 @@ import { checkUserAnswer, fetchRiddleAndClues } from './services/geminiService';
 import { AnswerEvaluation, GameState, PlayerScore, RiddleData } from './types';
 
 const App: React.FC = () => {
+  const { publicKey, connected, connecting } = useWallet();
   const [gameState, setGameState] = useState<GameState>(GameState.NotStarted);
   const [numPlayers, setNumPlayers] = useState<1 | 2>(1);
   const [currentPlayer, setCurrentPlayer] = useState<1 | 2>(1); // For 1-player or whose "turn" it conceptually is for 2-player highlighting
@@ -30,6 +33,7 @@ const App: React.FC = () => {
   const [feedbackModalMessage, setFeedbackModalMessage] = useState<string>("");
   const [gameSession, setGameSession] = useState<string>(Date.now().toString());
   const [isDemoMode, setIsDemoMode] = useState<boolean>(false);
+  const [walletTestMode, setWalletTestMode] = useState<boolean>(false);
 
   const resetRiddleState = () => {
     setIsGuessSubmitted(false);
@@ -393,6 +397,23 @@ const App: React.FC = () => {
         <h1 className="text-5xl font-extrabold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-indigo-500">Riddle Me This!</h1>
         <p className="text-slate-300 mb-8 text-lg">Test your wits against AI-generated riddles. Play solo or challenge a friend!</p>
         
+        {/* Wallet Connection */}
+        <div className="mb-6">
+          <div className="flex justify-center mb-4">
+            <WalletMultiButton className="!bg-gradient-to-r !from-purple-500 !to-pink-500 hover:!from-purple-600 hover:!to-pink-600 !border-0 !rounded-lg !font-semibold !text-white" />
+          </div>
+          {connecting && (
+            <p className="text-sm text-yellow-400 mb-4">🔄 Connecting wallet...</p>
+          )}
+          {connected && publicKey && (
+            <div className="text-sm text-green-400 mb-4">
+              ✅ Connected: {publicKey.toString().slice(0, 8)}...{publicKey.toString().slice(-8)}
+            </div>
+          )}
+          {!connected && !connecting && (
+            <p className="text-sm text-yellow-400 mb-4">Connect your Solana wallet to start playing!</p>
+          )}
+        </div>
 
         <div className="space-y-4">
           <button onClick={() => handleStartGame(1)} className="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-6 rounded-lg text-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-opacity-50">
@@ -401,9 +422,86 @@ const App: React.FC = () => {
           <button onClick={() => handleStartGame(2)} className="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg text-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-opacity-50">
             2 Players (Simultaneous)
           </button>
+          
+          {/* Wallet Test Mode */}
+          <button 
+            onClick={() => setWalletTestMode(true)} 
+            className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-3 px-6 rounded-lg text-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-opacity-50"
+          >
+            🧪 Test Wallet Connection
+          </button>
         </div>
         
         <p className="mt-6 text-sm text-green-500">✅ Ready to play!</p>
+      </div>
+    );
+  }
+
+  // Wallet Test Mode
+  if (walletTestMode) {
+    return (
+      <div className="bg-slate-800 p-8 rounded-xl shadow-2xl text-center max-w-2xl mx-auto ring-1 ring-slate-700">
+        <h1 className="text-4xl font-extrabold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">🧪 Wallet Test Mode</h1>
+        
+        {/* Wallet Connection Status */}
+        <div className="mb-8 p-6 bg-slate-700/50 rounded-lg">
+          <h2 className="text-2xl font-bold mb-4 text-slate-200">Connection Status</h2>
+          
+          {connecting && (
+            <div className="flex items-center justify-center space-x-3 mb-4">
+              <LoadingSpinner size="w-8 h-8" />
+              <span className="text-yellow-400 text-lg">Connecting wallet...</span>
+            </div>
+          )}
+          
+          {connected && publicKey ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-center space-x-3">
+                <div className="w-4 h-4 bg-green-400 rounded-full animate-pulse"></div>
+                <span className="text-green-400 text-lg font-semibold">✅ Wallet Connected!</span>
+              </div>
+              <div className="bg-slate-600 p-4 rounded-lg">
+                <p className="text-slate-300 text-sm mb-2">Wallet Address:</p>
+                <p className="text-green-400 font-mono text-lg break-all">{publicKey.toString()}</p>
+              </div>
+              <div className="bg-slate-600 p-4 rounded-lg">
+                <p className="text-slate-300 text-sm mb-2">Network:</p>
+                <p className="text-blue-400 font-semibold">Solana Devnet</p>
+              </div>
+            </div>
+          ) : !connecting && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-center space-x-3 mb-4">
+                <div className="w-4 h-4 bg-red-400 rounded-full"></div>
+                <span className="text-red-400 text-lg font-semibold">❌ Wallet Not Connected</span>
+              </div>
+              <p className="text-slate-400">Connect your wallet using the button below to test the functionality.</p>
+            </div>
+          )}
+        </div>
+
+        {/* Wallet Actions */}
+        <div className="space-y-4">
+          <div className="flex justify-center">
+            <WalletMultiButton className="!bg-gradient-to-r !from-purple-500 !to-pink-500 hover:!from-purple-600 hover:!to-pink-600 !border-0 !rounded-lg !font-semibold !text-white !text-lg !py-3 !px-8" />
+          </div>
+          
+          {connected && (
+            <div className="mt-6 p-4 bg-green-900/30 border border-green-500/30 rounded-lg">
+              <h3 className="text-green-400 font-semibold mb-2">✅ Wallet Test Successful!</h3>
+              <p className="text-slate-300 text-sm">
+                Your wallet is properly connected and ready for use. You can now return to the main game or continue testing.
+              </p>
+            </div>
+          )}
+          
+          <button 
+            onClick={() => setWalletTestMode(false)} 
+            className="w-full bg-slate-600 hover:bg-slate-700 text-white font-bold py-3 px-6 rounded-lg text-lg transition-colors"
+          >
+            ← Back to Main Menu
+          </button>
+        </div>
       </div>
     );
   }
@@ -432,6 +530,25 @@ const App: React.FC = () => {
   
   return (
     <div className="bg-slate-800/80 backdrop-blur-md p-6 sm:p-8 rounded-xl shadow-2xl w-full ring-1 ring-slate-700">
+      {/* Wallet Status Bar */}
+      <div className="flex justify-between items-center mb-4 p-3 bg-slate-700/50 rounded-lg">
+        <div className="flex items-center space-x-3">
+          {connected && publicKey ? (
+            <>
+              <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+              <span className="text-sm text-slate-300">
+                Wallet: {publicKey.toString().slice(0, 8)}...{publicKey.toString().slice(-8)}
+              </span>
+            </>
+          ) : (
+            <>
+              <div className="w-3 h-3 bg-red-400 rounded-full"></div>
+              <span className="text-sm text-slate-400">Wallet not connected</span>
+            </>
+          )}
+        </div>
+        <WalletMultiButton className="!bg-gradient-to-r !from-purple-500 !to-pink-500 hover:!from-purple-600 hover:!to-pink-600 !border-0 !rounded-md !font-semibold !text-white !text-sm !py-2 !px-4" />
+      </div>
 
       <Scoreboard />
       {renderGameContent()}
