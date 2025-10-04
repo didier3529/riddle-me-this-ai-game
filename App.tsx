@@ -1,5 +1,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import LoadingSpinner from './components/LoadingSpinner';
 import Modal from './components/Modal';
 import { POINTS_PER_CLUE, POINTS_PER_RIDDLE, TOTAL_RIDDLES } from './constants';
@@ -7,6 +9,7 @@ import { checkUserAnswer, fetchRiddleAndClues } from './services/geminiService';
 import { AnswerEvaluation, GameState, PlayerScore, RiddleData } from './types';
 
 const App: React.FC = () => {
+  const { publicKey, connected, connecting } = useWallet();
   const [gameState, setGameState] = useState<GameState>(GameState.NotStarted);
   const [numPlayers, setNumPlayers] = useState<1 | 2>(1);
   const [currentPlayer, setCurrentPlayer] = useState<1 | 2>(1); // For 1-player or whose "turn" it conceptually is for 2-player highlighting
@@ -393,6 +396,18 @@ const App: React.FC = () => {
         <h1 className="text-5xl font-extrabold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-indigo-500">Riddle Me This!</h1>
         <p className="text-slate-300 mb-8 text-lg">Test your wits against AI-generated riddles. Play solo or challenge a friend!</p>
         
+        {/* Simple Wallet Connection */}
+        <div className="mb-6">
+          <div className="flex justify-center mb-4">
+            <WalletMultiButton className="!bg-gradient-to-r !from-purple-500 !to-pink-500 hover:!from-purple-600 hover:!to-pink-600 !border-0 !rounded-lg !font-semibold !text-white" />
+          </div>
+          {connecting && <p className="text-sm text-yellow-400 mb-4">🔄 Connecting...</p>}
+          {connected && publicKey && (
+            <p className="text-sm text-green-400 mb-4">
+              ✅ Connected: {publicKey.toString().slice(0, 8)}...{publicKey.toString().slice(-8)}
+            </p>
+          )}
+        </div>
 
         <div className="space-y-4">
           <button onClick={() => handleStartGame(1)} className="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-6 rounded-lg text-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-opacity-50">
