@@ -44,6 +44,7 @@ const App: React.FC = () => {
     setApiError(null);
   };
 
+
   const loadNewRiddle = useCallback(async () => {
     setIsLoading(true);
     resetRiddleState(); // Reset relevant state before loading
@@ -417,12 +418,12 @@ const App: React.FC = () => {
             2 Players (Simultaneous)
           </button>
           
-          {/* Wallet Test Button */}
+          {/* Simple Wallet Success Message */}
           {connected && (
             <div className="mt-4 p-4 bg-green-900/30 border border-green-500/30 rounded-lg">
-              <p className="text-green-400 text-sm font-semibold mb-2">✅ Wallet Connected Successfully!</p>
-              <p className="text-slate-300 text-xs">
-                Your wallet is ready. You can now play the game or test wallet functionality.
+              <p className="text-green-400 text-sm font-semibold">✅ Wallet Connected Successfully!</p>
+              <p className="text-slate-300 text-xs mt-1">
+                Your wallet is ready. You can now play the game!
               </p>
             </div>
           )}
@@ -432,6 +433,7 @@ const App: React.FC = () => {
       </div>
     );
   }
+
 
 
   if (gameState === GameState.GameOver) {
@@ -458,6 +460,25 @@ const App: React.FC = () => {
   
   return (
     <div className="bg-slate-800/80 backdrop-blur-md p-6 sm:p-8 rounded-xl shadow-2xl w-full ring-1 ring-slate-700">
+      {/* Wallet Status Bar */}
+      <div className="flex justify-between items-center mb-4 p-3 bg-slate-700/50 rounded-lg">
+        <div className="flex items-center space-x-3">
+          {connected && publicKey ? (
+            <>
+              <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+              <span className="text-sm text-slate-300">
+                Wallet: {publicKey.toString().slice(0, 8)}...{publicKey.toString().slice(-8)}
+              </span>
+            </>
+          ) : (
+            <>
+              <div className="w-3 h-3 bg-red-400 rounded-full"></div>
+              <span className="text-sm text-slate-400">Wallet not connected</span>
+            </>
+          )}
+        </div>
+        <WalletMultiButton className="!bg-gradient-to-r !from-purple-500 !to-pink-500 hover:!from-purple-600 hover:!to-pink-600 !border-0 !rounded-md !font-semibold !text-white !text-sm !py-2 !px-4" />
+      </div>
 
       <Scoreboard />
       {renderGameContent()}

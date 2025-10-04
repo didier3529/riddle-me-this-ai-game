@@ -1,7 +1,7 @@
 import React from 'react';
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
-import { PhantomWalletAdapter } from '@solana/wallet-adapter-wallets';
+import { PhantomWalletAdapter, SolflareWalletAdapter, BackpackWalletAdapter } from '@solana/wallet-adapter-wallets';
 import { clusterApiUrl } from '@solana/web3.js';
 
 // Only import CSS if we're using wallet functionality
@@ -12,7 +12,11 @@ interface WalletWrapperProps {
 }
 
 const WalletWrapper: React.FC<WalletWrapperProps> = ({ children }) => {
-  const wallets = [new PhantomWalletAdapter()];
+  const wallets = [
+    new PhantomWalletAdapter(),
+    new SolflareWalletAdapter(),
+    new BackpackWalletAdapter(),
+  ];
   const network = 'devnet';
   const endpoint = clusterApiUrl(network);
 
