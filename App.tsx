@@ -6,8 +6,8 @@ import LoadingSpinner from './components/LoadingSpinner';
 import Modal from './components/Modal';
 import { POINTS_PER_CLUE, POINTS_PER_RIDDLE, TOTAL_RIDDLES } from './constants';
 import { checkUserAnswer, fetchRiddleAndClues } from './services/geminiService';
+import { claimPrize, getVaultBalance, setWinner } from './solana/gameClient';
 import { AnswerEvaluation, GameState, PlayerScore, RiddleData } from './types';
-import { setWinner, claimPrize, getVaultBalance } from './solana/gameClient';
 
 const App: React.FC = () => {
   const { publicKey, connected, connecting } = useWallet();
@@ -56,10 +56,13 @@ const App: React.FC = () => {
   
   // Set winner when game ends (only team wallet can do this)
   useEffect(() => {
-    if (gameState === GameState.GameOver && publicKey && isTeamWallet && wallet) {
-      setWinner(wallet, publicKey).catch(console.error);
+    if (gameState === GameState.GameOver && publicKey && isTeamWallet && wallet && connected) {
+      console.log('Setting winner for team wallet:', publicKey.toBase58());
+      setWinner(wallet, publicKey).catch((error) => {
+        console.error('Failed to set winner:', error);
+      });
     }
-  }, [gameState, publicKey, isTeamWallet, wallet]);
+  }, [gameState, publicKey, isTeamWallet, wallet, connected]);
 
 
   const loadNewRiddle = useCallback(async () => {
@@ -474,7 +477,14 @@ const App: React.FC = () => {
           <p className="text-white mb-2">Prize Pot: {prizeBalance.toFixed(4)} SOL</p>
           {connected ? (
             <button
-              onClick={() => wallet && claimPrize(wallet).catch(console.error)}
+              onClick={() => {
+                if (wallet && publicKey) {
+                  console.log('Claiming prize for:', publicKey.toBase58());
+                  claimPrize(wallet).catch((error) => {
+                    console.error('Failed to claim prize:', error);
+                  });
+                }
+              }}
               className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
               disabled={!publicKey}
             >

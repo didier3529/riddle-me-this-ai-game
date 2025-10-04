@@ -22,6 +22,12 @@ export async function setWinner(wallet: any, winner: web3.PublicKey) {
     console.log('IDL available:', !!IDL);
     console.log('Program ID:', PROGRAM_ID.toBase58());
     
+    // Check if wallet is valid
+    if (!wallet || !wallet.signTransaction) {
+      console.error('Wallet not connected or invalid');
+      return;
+    }
+    
     // For now, just log the action until program is deployed
     console.log('Winner set (placeholder):', winner.toBase58());
     return Promise.resolve();
@@ -36,7 +42,7 @@ export async function setWinner(wallet: any, winner: web3.PublicKey) {
     // }).rpc();
     // console.log('Winner set:', winner.toBase58());
   } catch (error) {
-    console.error('Error setting winner:', error);
+    console.error('Set Winner Error:', error);
     throw error;
   }
 }
@@ -44,12 +50,18 @@ export async function setWinner(wallet: any, winner: web3.PublicKey) {
 // Claim the prize (called by winner)
 export async function claimPrize(wallet: any) {
   try {
-    console.log('Attempting to claim prize for:', wallet.publicKey.toBase58());
+    console.log('Attempting to claim prize for:', wallet.publicKey?.toBase58());
     console.log('IDL available:', !!IDL);
     console.log('Program ID:', PROGRAM_ID.toBase58());
     
+    // Check if wallet is valid
+    if (!wallet || !wallet.signTransaction) {
+      console.error('Wallet not connected or invalid');
+      return;
+    }
+    
     // For now, just log the action until program is deployed
-    console.log('Prize claimed (placeholder):', wallet.publicKey.toBase58());
+    console.log('Prize claimed (placeholder):', wallet.publicKey?.toBase58());
     return Promise.resolve();
     
     // Uncomment when program is deployed:
@@ -62,7 +74,7 @@ export async function claimPrize(wallet: any) {
     // }).rpc();
     // console.log('Prize claimed by:', wallet.publicKey.toBase58());
   } catch (error) {
-    console.error('Error claiming prize:', error);
+    console.error('Claim Prize Error:', error);
     throw error;
   }
 }
