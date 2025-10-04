@@ -1,7 +1,7 @@
 
-import React, { useCallback, useEffect, useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import React, { useCallback, useEffect, useState } from 'react';
 import LoadingSpinner from './components/LoadingSpinner';
 import Modal from './components/Modal';
 import { POINTS_PER_CLUE, POINTS_PER_RIDDLE, TOTAL_RIDDLES } from './constants';
@@ -493,6 +493,7 @@ const App: React.FC = () => {
               <span className="text-yellow-300 text-sm">Connect Wallet to Play!</span>
           )}
           <WalletMultiButton className="bg-white text-blue-500 px-2 py-1 rounded" />
+        </div>
       </div>
 
       <Scoreboard />
