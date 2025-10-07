@@ -1,8 +1,6 @@
 
 import { useWallet } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import LoadingSpinner from './components/LoadingSpinner';
 import Modal from './components/Modal';
 import { POINTS_PER_CLUE, POINTS_PER_RIDDLE, TOTAL_RIDDLES } from './constants';
 import { checkUserAnswer, fetchRiddleAndClues } from './services/geminiService';
@@ -218,7 +216,7 @@ const App: React.FC = () => {
     if (currentRiddleNumber === 1) {
       return '/Question 1.mp4';
     } else if (currentRiddleNumber === 2) {
-      return 'question 2.mp4';
+      return '/Question 2.mp4';
     } else if (currentRiddleNumber === 3) {
       return 'question 3.mp4';
     } else if (currentRiddleNumber === 4) {
@@ -295,168 +293,93 @@ const App: React.FC = () => {
       </div>
     );
 
-    const cluesDisabled = isGuessSubmitted || activePlayerForAnswer !== null || isLoading;
-
     return (
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-3xl font-bold text-sky-400 mb-2">Riddle Time!</h2>
-          <p className="text-xl text-slate-300 leading-relaxed whitespace-pre-wrap">{currentRiddleData.riddle}</p>
-        </div>
+      <div className="min-h-screen flex flex-col items-center justify-end p-6 relative overflow-hidden pb-20">
+        {/* Holographic Background Effects */}
+        <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-blue-500/10 to-indigo-500/10 pointer-events-none animate-pulse" />
+        <div className="absolute top-20 left-20 w-64 h-64 bg-cyan-400/20 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-20 right-20 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse delay-700" />
 
-        <div>
-          <h3 className="text-xl font-semibold text-amber-400 mb-3">Clues (Reveal wisely! Each costs {POINTS_PER_CLUE} points):</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {currentRiddleData.clues.map((clue, index) => (
-              <button
-                key={index}
-                onClick={() => handleRevealClue(index)}
-                disabled={revealedClues[index] || cluesDisabled}
-                className={`p-3 rounded-md text-left transition-all duration-200 ease-in-out transform hover:scale-105
-                  ${revealedClues[index] 
-                    ? 'bg-slate-700/80 cursor-default' 
-                    : 'bg-indigo-600 hover:bg-indigo-500 focus:ring-2 focus:ring-indigo-400 focus:ring-opacity-50'}
-                  ${cluesDisabled ? 'opacity-60 cursor-not-allowed' : ''}
-                `}
-              >
-                {revealedClues[index] ? (
-                  <>
-                    <span className="font-semibold text-sky-300 block mb-1">Clue {index + 1}:</span>
-                    <span className="text-slate-300">{clue}</span>
-                  </>
-                ) : (
-                  <span className="font-semibold text-slate-100">Reveal Clue {index + 1}</span>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-        
-        {/* Player Interaction Area */}
-        {numPlayers === 1 && !isGuessSubmitted && (
-          <div className="mt-6">
-            <label htmlFor="userGuess" className="block text-lg font-medium text-slate-300 mb-1">Your Answer:</label>
+        <div className="w-full max-w-2xl space-y-8 relative z-10">
+          {/* Answer Form */}
+          <div className="relative group">
+            <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500 rounded-2xl opacity-50 group-hover:opacity-75 blur-xl transition duration-500 animate-pulse" />
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-300 via-blue-400 to-indigo-400 rounded-2xl opacity-30 blur transition duration-500" />
+
+            <div className="relative bg-black/40 backdrop-blur-xl rounded-2xl p-8 border-2 border-cyan-400/30 shadow-[0_0_50px_rgba(34,211,238,0.3)] hover:shadow-[0_0_80px_rgba(34,211,238,0.5)] transition-all duration-500">
+              <form onSubmit={(e) => { e.preventDefault(); handleSubmitGuess(); }} className="space-y-4">
+                <div className="relative">
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-xl opacity-20 blur" />
             <input
               type="text"
-              id="userGuess"
               value={userGuess}
               onChange={(e) => setUserGuess(e.target.value)}
-              placeholder="Type your guess here..."
+                    placeholder="Type your answer here..."
               disabled={isLoading}
-              className="w-full p-3 bg-slate-700 border border-slate-600 rounded-md text-slate-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 placeholder-slate-400 disabled:opacity-60"
-            />
-            <button
-              onClick={handleSubmitGuess}
-              disabled={!userGuess.trim() || isLoading}
-              className="w-full mt-4 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-md transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-            >
-              {isLoading && !lastGuessEvaluation ? <LoadingSpinner size="w-5 h-5 mr-2" /> : null}
-              Submit Guess
-            </button>
+                    className="relative w-full bg-white/5 border-2 border-cyan-400/40 text-white placeholder:text-white/40 h-14 text-lg rounded-xl backdrop-blur-sm focus:border-cyan-400/80 focus:ring-2 focus:ring-cyan-400/50 focus:shadow-[0_0_20px_rgba(34,211,238,0.3)] transition-all p-4"
+                  />
           </div>
-        )}
 
-        {numPlayers === 2 && (
-          <div className="mt-8">
-            {activePlayerForAnswer === null && !isGuessSubmitted && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="relative">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500 rounded-xl blur-lg opacity-60 group-hover:opacity-100 transition animate-pulse" />
                 <button
-                  onClick={() => handleHitMe(1)}
-                  disabled={isLoading}
-                  className="w-full bg-rose-500 hover:bg-rose-600 text-white font-bold py-3 px-6 rounded-lg text-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-rose-400"
-                >
-                  Player 1: Hit Me!
-                </button>
-                <button
-                  onClick={() => handleHitMe(2)}
-                  disabled={isLoading}
-                  className="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-6 rounded-lg text-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-teal-400"
-                >
-                  Player 2: Hit Me!
+                    type="submit"
+                    disabled={!userGuess.trim() || isLoading}
+                    className="relative w-full h-14 text-lg font-semibold overflow-hidden group/btn rounded-xl border-2 border-cyan-400/50 shadow-[0_0_30px_rgba(34,211,238,0.4)] hover:shadow-[0_0_50px_rgba(34,211,238,0.6)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 transition-transform group-hover/btn:scale-105" />
+                    <span className="relative z-10 text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
+                      {isLoading && !lastGuessEvaluation ? 'Loading...' : 'Submit Guess'}
+                    </span>
                 </button>
               </div>
-            )}
-
-            {activePlayerForAnswer !== null && !isGuessSubmitted && (
-              <div className="mt-6 text-center">
-                <p className={`text-2xl font-semibold mb-4 ${activePlayerForAnswer === 1 ? 'text-rose-400' : 'text-teal-400'}`}>
-                  Player {activePlayerForAnswer} is answering!
-                </p>
-                <label htmlFor="userGuess" className="sr-only">Player {activePlayerForAnswer}'s Answer:</label>
-                <input
-                  type="text"
-                  id="userGuess"
-                  value={userGuess}
-                  onChange={(e) => setUserGuess(e.target.value)}
-                  placeholder={`Player ${activePlayerForAnswer}, type your guess...`}
-                  disabled={isLoading}
-                  className="w-full max-w-lg mx-auto p-3 bg-slate-700 border border-slate-600 rounded-md text-slate-100 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 placeholder-slate-400 disabled:opacity-60"
-                />
-                <button
-                  onClick={handleSubmitGuess}
-                  disabled={!userGuess.trim() || isLoading}
-                  className="w-full max-w-lg mx-auto mt-4 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-md transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                >
-                  {isLoading && !lastGuessEvaluation ? <LoadingSpinner size="w-5 h-5 mr-2" /> : null}
-                  Submit Guess
-                </button>
+              </form>
               </div>
-            )}
-             {activePlayerForAnswer === null && numPlayers === 2 && isGuessSubmitted && (
-                <p className="text-center text-slate-400 mt-4">Waiting for next riddle...</p>
-            )}
           </div>
-        )}
         
-        {apiError && isGuessSubmitted && (
-           <p className="text-red-400 text-sm mt-2 text-center">{apiError}</p>
-        )}
+          {apiError && isGuessSubmitted && (
+            <p className="text-red-400 text-sm mt-2 text-center">{apiError}</p>
+          )}
+        </div>
+        
+        {/* Score Display at Bottom */}
+        <div className="flex justify-center mt-8">
+          <div className="relative group/score w-full max-w-md">
+            {/* Multiple glow layers for depth */}
+            <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 blur-2xl opacity-40 group-hover/score:opacity-60 transition animate-pulse" />
+            <div className="absolute inset-0 bg-gradient-to-r from-cyan-300 via-blue-300 to-indigo-300 blur-xl opacity-30 transition" />
+
+            <div className="relative bg-black/40 backdrop-blur-xl rounded-2xl px-12 py-6 border-2 border-cyan-400/30 shadow-[0_0_40px_rgba(34,211,238,0.3)] hover:shadow-[0_0_60px_rgba(34,211,238,0.5)] transition-all duration-500">
+              <div className="text-sm text-cyan-300/80 mb-2 text-center font-medium tracking-wider uppercase">
+                Score
+              </div>
+              <div className="text-6xl font-bold text-center bg-gradient-to-r from-cyan-300 via-blue-300 to-indigo-300 bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(34,211,238,0.6)]">
+                {scores.player1}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   };
   
   const Scoreboard = () => {
-    let p1Pulse = false;
-    let p2Pulse = false;
-
-    if (gameState === GameState.Playing) {
-      if (numPlayers === 1) {
-        p1Pulse = true;
-      } else { // numPlayers === 2
-        if (activePlayerForAnswer === 1) p1Pulse = true;
-        else if (activePlayerForAnswer === 2) p2Pulse = true;
-        else if (currentPlayer === 1) p1Pulse = true; // Default to currentPlayer if no one actively answering
-        else p2Pulse = true;
-      }
-    }
-
     return (
-      <div className="bg-slate-900/70 backdrop-blur-sm p-4 rounded-lg shadow-md mb-6 ring-1 ring-slate-700">
-        <h3 className="text-xl font-semibold text-center text-sky-400 mb-3">
-          Riddle {Math.min(totalRiddlesPlayedInGame + 1, TOTAL_RIDDLES)} of {TOTAL_RIDDLES}
-          {isDemoMode && <span className="ml-2 text-xs bg-yellow-500 text-yellow-900 px-2 py-1 rounded">DEMO MODE</span>}
-        </h3>
-        <div className={`grid ${numPlayers === 2 ? 'grid-cols-2 gap-4' : 'grid-cols-1'} text-center`}>
-          <div>
-            <p className={`text-lg font-medium ${p1Pulse ? 'text-amber-400 animate-pulse' : 'text-slate-300'}`}>
-              Player 1 Score
-            </p>
-            <p className="text-3xl font-bold text-green-400">{scores.player1}</p>
+      <div className="flex justify-center mb-8">
+        <div className="relative group/score w-full max-w-md">
+          {/* Multiple glow layers for depth */}
+          <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 blur-2xl opacity-40 group-hover/score:opacity-60 transition animate-pulse" />
+          <div className="absolute inset-0 bg-gradient-to-r from-cyan-300 via-blue-300 to-indigo-300 blur-xl opacity-30 transition" />
+
+          <div className="relative bg-black/40 backdrop-blur-xl rounded-2xl px-12 py-6 border-2 border-cyan-400/30 shadow-[0_0_40px_rgba(34,211,238,0.3)] hover:shadow-[0_0_60px_rgba(34,211,238,0.5)] transition-all duration-500">
+            <div className="text-sm text-cyan-300/80 mb-2 text-center font-medium tracking-wider uppercase">
+              Score
           </div>
-          {numPlayers === 2 && (
-            <div>
-              <p className={`text-lg font-medium ${p2Pulse ? 'text-amber-400 animate-pulse' : 'text-slate-300'}`}>
-                Player 2 Score
-              </p>
-              <p className="text-3xl font-bold text-green-400">{scores.player2}</p>
+            <div className="text-6xl font-bold text-center bg-gradient-to-r from-cyan-300 via-blue-300 to-indigo-300 bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(34,211,238,0.6)]">
+              {scores.player1}
             </div>
-          )}
+          </div>
         </div>
-        {gameState === GameState.Playing && currentRiddleData && (
-           <p className="text-center mt-3 text-md text-slate-400">
-              Current Riddle Value: <span className="font-bold text-yellow-400">{currentRiddlePotentialPoints} pts</span>
-          </p>
-        )}
       </div>
     );
   };
@@ -539,7 +462,7 @@ const App: React.FC = () => {
             }}
           >
             START
-          </button>
+              </button>
         </div>
       </div>
     );
@@ -558,37 +481,62 @@ const App: React.FC = () => {
         borderRadius: '8px',
         margin: '8px'
       }}>
-        <div className="bg-slate-800 p-8 rounded-xl shadow-2xl text-center max-w-lg mx-auto ring-1 ring-slate-700">
-        <h1 className="text-4xl font-bold mb-6 text-sky-400">Game Over!</h1>
-        {numPlayers === 2 && winner !== "It's a Tie!" && <p className="text-2xl text-amber-400 mb-2">{winner} wins!</p>}
-        {winner === "It's a Tie!" && <p className="text-2xl text-amber-400 mb-2">It's a Tie!</p>}
-         <p className="text-xl text-slate-300 mb-1">Player 1: {p1FinalScore} points</p>
-        {numPlayers === 2 && <p className="text-xl text-slate-300 mb-4">Player 2: {p2FinalScore} points</p>}
-        {numPlayers === 1 && <p className="text-xl text-slate-300 mb-4">Final Score: {p1FinalScore} points</p>}
-        
-        {/* Prize Claim Section */}
-        <div className="mt-6 p-4 bg-green-500 rounded text-center">
-          <h2 className="text-2xl text-white mb-2">
-            Congrats, {numPlayers === 1 ? 'Player 1' : (scores.player1 > scores.player2 ? 'Player 1' : 'Player 2')} Wins!
-          </h2>
-          {connected ? (
-            <button
-              onClick={() => console.log('Claim Prize clicked')} // Placeholder, we'll add logic later
-              className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-            >
-              Claim Pump.fun Fees Prize!
-            </button>
-          ) : (
-            <p className="text-white">Connect wallet to claim prize!</p>
-          )}
-        </div>
-        
-        <button
-          onClick={handleRestart}
-          className="mt-6 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg text-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-50"
-        >
-          Play Again?
-        </button>
+        <div className="relative group w-full max-w-lg">
+          {/* Holographic glow effects */}
+          <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500 rounded-2xl opacity-50 group-hover:opacity-75 blur-xl transition duration-500 animate-pulse" />
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-300 via-blue-400 to-indigo-400 rounded-2xl opacity-30 blur transition duration-500" />
+          
+          <div className="relative bg-black/40 backdrop-blur-xl rounded-2xl p-8 border-2 border-cyan-400/30 shadow-[0_0_50px_rgba(34,211,238,0.3)] hover:shadow-[0_0_80px_rgba(34,211,238,0.5)] transition-all duration-500 text-center">
+            <h1 className="text-4xl font-bold mb-6 bg-gradient-to-r from-cyan-300 via-blue-300 to-indigo-300 bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(34,211,238,0.6)]">
+              Game Over!
+            </h1>
+            
+            {numPlayers === 2 && winner !== "It's a Tie!" && (
+              <p className="text-2xl text-cyan-300 mb-4 font-semibold">{winner} wins!</p>
+            )}
+            {winner === "It's a Tie!" && (
+              <p className="text-2xl text-cyan-300 mb-4 font-semibold">It's a Tie!</p>
+            )}
+            
+            <div className="text-xl text-white mb-4">
+              <p className="mb-2">Player 1: {p1FinalScore} points</p>
+              {numPlayers === 2 && <p className="mb-2">Player 2: {p2FinalScore} points</p>}
+              {numPlayers === 1 && <p className="mb-4">Final Score: {p1FinalScore} points</p>}
+            </div>
+            
+            {/* Prize Claim Section */}
+            <div className="mt-6 p-6 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-xl border-2 border-green-400/30 shadow-[0_0_20px_rgba(34,197,94,0.3)]">
+              <h2 className="text-2xl text-green-300 mb-3 font-bold">
+                Congrats, {numPlayers === 1 ? 'Player 1' : (scores.player1 > scores.player2 ? 'Player 1' : 'Player 2')} Wins!
+              </h2>
+              {connected ? (
+                <div className="relative">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-lg blur opacity-60" />
+                  <button
+                    onClick={() => console.log('Claim Prize clicked')}
+                    className="relative bg-gradient-to-r from-blue-500 to-cyan-500 text-white p-3 rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all font-semibold"
+                  >
+                    Claim Pump.fun Fees Prize!
+                  </button>
+                </div>
+              ) : (
+                <p className="text-green-300">Connect wallet to claim prize!</p>
+              )}
+            </div>
+            
+            <div className="mt-6 relative">
+              <div className="absolute -inset-1 bg-gradient-to-r from-green-400 to-emerald-400 rounded-xl blur-lg opacity-60 group-hover:opacity-100 transition animate-pulse" />
+              <button
+                onClick={handleRestart}
+                className="relative w-full h-12 text-lg font-semibold overflow-hidden group/btn rounded-xl border-2 border-green-400/50 shadow-[0_0_30px_rgba(34,197,94,0.4)] hover:shadow-[0_0_50px_rgba(34,197,94,0.6)] transition-all"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-500 transition-transform group-hover/btn:scale-105" />
+                <span className="relative z-10 text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
+                  Play Again?
+                </span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -648,29 +596,9 @@ const App: React.FC = () => {
       {/* Video Overlay for readability */}
       <div className="absolute inset-0 bg-black/20"></div>
 
-      <div className="relative z-10 p-2 sm:p-4">
-        {/* Wallet Status Bar */}
-        <div className="relative flex justify-between items-center mb-4 p-3 bg-gradient-to-r from-blue-500/90 to-purple-500/90 backdrop-blur-sm rounded-lg border border-cyan-400/30">
-          <h1 className="text-white text-lg font-bold">Riddle Me This!</h1>
-          <div className="flex items-center gap-2">
-            {connected && publicKey ? (
-              <>
-                <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-white text-sm">
-                  Connected: {publicKey?.toBase58().slice(0, 4)}...{publicKey?.toBase58().slice(-4)}
-                </span>
-              </>
-            ) : (
-                <span className="text-yellow-300 text-sm">Connect Wallet to Play!</span>
-            )}
-            <WalletMultiButton className="bg-white text-blue-500 px-2 py-1 rounded" />
-          </div>
-        </div>
-
-        <div className="relative z-10">
-          <Scoreboard />
-          {renderGameContent()}
-        </div>
+      <div className="relative z-10">
+        {renderGameContent()}
+      </div>
         
         <Modal
           isOpen={feedbackModalOpen}
@@ -678,14 +606,13 @@ const App: React.FC = () => {
           title={feedbackModalTitle}
         >
           <p>{feedbackModalMessage}</p>
-          {isLoading && lastGuessEvaluation !== null && gameState === GameState.Playing && (
-              <div className="mt-4 flex flex-col items-center">
-                  <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-2"></div>
-                  <p className="text-sm text-blue-400">Loading next riddle...</p>
-              </div>
-          )}
+        {isLoading && lastGuessEvaluation !== null && gameState === GameState.Playing && (
+            <div className="mt-4 flex flex-col items-center">
+                <div className="w-8 h-8 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin mb-2 shadow-[0_0_20px_rgba(34,211,238,0.6)]"></div>
+                <p className="text-sm text-cyan-300">Loading next riddle...</p>
+            </div>
+        )}
         </Modal>
-      </div>
     </div>
   );
 };
