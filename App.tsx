@@ -2,6 +2,7 @@
 import { useWallet } from '@solana/wallet-adapter-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Modal from './components/Modal';
+import SocialButtons from './components/SocialButtons';
 import { POINTS_PER_CLUE, POINTS_PER_RIDDLE, TOTAL_RIDDLES } from './constants';
 import { checkUserAnswer, fetchRiddleAndClues } from './services/geminiService';
 import { AnswerEvaluation, GameState, PlayerScore, RiddleData } from './types';
@@ -392,6 +393,10 @@ const App: React.FC = () => {
         borderRadius: '8px',
         margin: '8px'
       }}>
+        {/* Social Buttons - Top Right */}
+        <div className="fixed top-4 right-4 z-50">
+          <SocialButtons />
+        </div>
         {/* Video Background */}
         <video
           ref={videoRef}
@@ -481,6 +486,10 @@ const App: React.FC = () => {
         borderRadius: '8px',
         margin: '8px'
       }}>
+        {/* Social Buttons - Top Right */}
+        <div className="fixed top-4 right-4 z-50">
+          <SocialButtons />
+        </div>
         <div className="relative group w-full max-w-lg">
           {/* Holographic glow effects */}
           <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500 rounded-2xl opacity-50 group-hover:opacity-75 blur-xl transition duration-500 animate-pulse" />
@@ -550,6 +559,10 @@ const App: React.FC = () => {
       borderRadius: '8px',
       margin: '8px'
     }}>
+      {/* Social Buttons - Top Right */}
+      <div className="fixed top-4 right-4 z-50">
+        <SocialButtons />
+      </div>
       {/* Question Video Background */}
       {gameState === GameState.Playing && currentRiddleData && (
         <video
