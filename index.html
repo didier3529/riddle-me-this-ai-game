@@ -10,6 +10,238 @@
     body {
       font-family: 'Inter', sans-serif; /* A common Tailwind font */
     }
+    
+    /* Simple, clean styling for better readability */
+    
+    /* Enhanced Holographic Container for Lottie Animation */
+    .holographic-container {
+      position: relative;
+      filter: 
+        drop-shadow(0 0 10px #00bfff) 
+        drop-shadow(0 0 20px #00bfff) 
+        drop-shadow(0 0 30px #00bfff);
+      animation: holographicPulse 3s ease-in-out infinite alternate;
+    }
+    
+    /* Blue Glow Overlay */
+    .holographic-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(
+        ellipse at center,
+        rgba(0, 191, 255, 0.15) 0%,
+        rgba(0, 191, 255, 0.1) 30%,
+        transparent 70%
+      );
+      animation: overlayPulse 2s ease-in-out infinite alternate;
+      pointer-events: none;
+      z-index: 2;
+    }
+    
+    /* Scanlines Effect */
+    .holographic-scanlines {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 191, 255, 0.1) 2px,
+        rgba(0, 191, 255, 0.1) 4px
+      );
+      animation: scanlineMove 3s linear infinite;
+      pointer-events: none;
+      z-index: 3;
+      mix-blend-mode: overlay;
+    }
+    
+    /* Glitch Effect */
+    .holographic-container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(0, 191, 255, 0.4),
+        transparent
+      );
+      animation: glitchSweep 5s linear infinite;
+      pointer-events: none;
+      z-index: 4;
+      mix-blend-mode: screen;
+    }
+    
+    /* Distortion Effect */
+    .holographic-container::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: 
+        repeating-linear-gradient(
+          90deg,
+          transparent,
+          transparent 1px,
+          rgba(0, 191, 255, 0.05) 1px,
+          rgba(0, 191, 255, 0.05) 2px
+        );
+      animation: distortion 4s ease-in-out infinite;
+      pointer-events: none;
+      z-index: 1;
+      mix-blend-mode: multiply;
+    }
+    
+    @keyframes holographicPulse {
+      0% {
+        filter: 
+          drop-shadow(0 0 5px #00bfff) 
+          drop-shadow(0 0 15px #00bfff) 
+          drop-shadow(0 0 25px #00bfff);
+        transform: scale(1);
+      }
+      100% {
+        filter: 
+          drop-shadow(0 0 15px #00bfff) 
+          drop-shadow(0 0 30px #00bfff) 
+          drop-shadow(0 0 45px #00bfff);
+        transform: scale(1.02);
+      }
+    }
+    
+    @keyframes overlayPulse {
+      0% {
+        opacity: 0.3;
+      }
+      100% {
+        opacity: 0.7;
+      }
+    }
+    
+    @keyframes scanlineMove {
+      0% {
+        transform: translateY(-100%);
+      }
+      100% {
+        transform: translateY(100%);
+      }
+    }
+    
+    @keyframes glitchSweep {
+      0% {
+        transform: translateX(-100%);
+      }
+      100% {
+        transform: translateX(100%);
+      }
+    }
+    
+    @keyframes distortion {
+      0%, 100% {
+        transform: translateX(0) skewX(0deg);
+        opacity: 0.3;
+      }
+      25% {
+        transform: translateX(-1px) skewX(0.5deg);
+        opacity: 0.5;
+      }
+      50% {
+        transform: translateX(0) skewX(0deg);
+        opacity: 0.3;
+      }
+      75% {
+        transform: translateX(1px) skewX(-0.5deg);
+        opacity: 0.5;
+      }
+    }
+    
+    /* Video Overlay Mixing Styles */
+    .video-overlay {
+      mix-blend-mode: screen;
+      opacity: 0.8;
+    }
+    
+    .video-overlay-multiply {
+      mix-blend-mode: multiply;
+      opacity: 0.6;
+    }
+    
+    .video-overlay-overlay {
+      mix-blend-mode: overlay;
+      opacity: 0.7;
+    }
+    
+    /* Holographic Button Styles */
+    .holographic-button {
+      position: relative;
+      overflow: hidden;
+      animation: holographicPulse 2s ease-in-out infinite alternate;
+    }
+    
+    .holographic-button::before {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      background: linear-gradient(45deg, #00bfff, #0080ff, #00bfff, #40e0d0);
+      background-size: 400% 400%;
+      animation: holographicBorder 3s ease infinite;
+      z-index: -1;
+      border-radius: inherit;
+    }
+    
+    .holographic-button::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(0, 191, 255, 0.4), transparent);
+      animation: holographicSweep 2s linear infinite;
+      z-index: 1;
+    }
+    
+    @keyframes holographicBorder {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    
+    @keyframes holographicSweep {
+      0% { left: -100%; }
+      100% { left: 100%; }
+    }
+    
+    @keyframes holographicPulse {
+      0% {
+        box-shadow: 0 0 20px rgba(0, 191, 255, 0.5), inset 0 0 20px rgba(0, 191, 255, 0.1);
+        text-shadow: 0 0 10px rgba(0, 191, 255, 0.8);
+      }
+      100% {
+        box-shadow: 0 0 30px rgba(0, 191, 255, 0.8), inset 0 0 30px rgba(0, 191, 255, 0.2);
+        text-shadow: 0 0 15px rgba(0, 191, 255, 1);
+      }
+    }
+    
+    /* Ensure video elements are properly positioned */
+    video {
+      object-fit: cover;
+    }
+    
     /* Custom scrollbar for better aesthetics if needed */
     ::-webkit-scrollbar {
       width: 8px;
@@ -26,8 +258,8 @@
     }
   </style>
 </head>
-<body class="bg-gradient-to-br from-slate-900 to-slate-800 text-slate-100 min-h-screen flex items-center justify-center p-4">
-  <div id="root" class="w-full max-w-4xl"></div>
+<body class="bg-gradient-to-br from-slate-900 to-slate-800 text-slate-100 min-h-screen flex items-center justify-center p-0">
+  <div id="root" class="w-full h-full"></div>
   <script type="module" src="/index.tsx"></script>
 </body>
 </html>

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #000;
+            color: white;
+        }
+        video {
+            width: 100%;
+            max-width: 800px;
+            height: auto;
+        }
+        .test-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Video Test Page</h1>
+        
+        <div>
+            <h2>Main.mov Test</h2>
+            <video controls muted loop>
+                <source src="/Main.mov" type="video/quicktime">
+                <source src="/Main.mov" type="video/mp4">
+                <source src="/Main.mov" type="video/x-msvideo">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+        
+        <div>
+            <h2>Background Video Test</h2>
+            <video controls muted loop>
+                <source src="social_u5228372594_ultra-detailed_cinematic_spaceship_cockpit_interi_f6884bdf-2d62-406d-841c-fd0d781a38d8_2.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+        
+        <div>
+            <h2>Video Mixing Test</h2>
+            <div style="position: relative; width: 100%; max-width: 800px; height: 400px; background: #333;">
+                <video 
+                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;"
+                    muted loop autoplay>
+                    <source src="social_u5228372594_ultra-detailed_cinematic_spaceship_cockpit_interi_f6884bdf-2d62-406d-841c-fd0d781a38d8_2.mp4" type="video/mp4">
+                </video>
+                <video 
+                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; mix-blend-mode: screen; opacity: 0.8;"
+                    muted loop autoplay>
+                    <source src="/Main.mov" type="video/quicktime">
+                    <source src="/Main.mov" type="video/mp4">
+                </video>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

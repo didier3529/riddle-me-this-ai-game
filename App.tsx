@@ -1,12 +1,11 @@
 
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import LoadingSpinner from './components/LoadingSpinner';
 import Modal from './components/Modal';
 import { POINTS_PER_CLUE, POINTS_PER_RIDDLE, TOTAL_RIDDLES } from './constants';
 import { checkUserAnswer, fetchRiddleAndClues } from './services/geminiService';
-import { claimPrize, getVaultBalance, setWinner } from './solana/gameClient';
 import { AnswerEvaluation, GameState, PlayerScore, RiddleData } from './types';
 
 const App: React.FC = () => {
@@ -34,7 +33,9 @@ const App: React.FC = () => {
   const [feedbackModalMessage, setFeedbackModalMessage] = useState<string>("");
   const [gameSession, setGameSession] = useState<string>(Date.now().toString());
   const [isDemoMode, setIsDemoMode] = useState<boolean>(false);
-  const [prizeBalance, setPrizeBalance] = useState<number>(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const questionVideoRef = useRef<HTMLVideoElement>(null);
+  const [isPlayingVideo, setIsPlayingVideo] = useState<boolean>(false);
 
   const resetRiddleState = () => {
     setIsGuessSubmitted(false);
@@ -45,24 +46,6 @@ const App: React.FC = () => {
     setActivePlayerForAnswer(null);
     setApiError(null);
   };
-
-  // Fetch vault balance on component mount
-  useEffect(() => {
-    getVaultBalance().then(setPrizeBalance).catch(console.error);
-  }, []);
-
-  // Team wallet check - replace with your actual team wallet address
-  const isTeamWallet = publicKey?.toBase58() === 'YourTeamWalletAddress'; // Replace with your team's public key
-  
-  // Set winner when game ends (only team wallet can do this)
-  useEffect(() => {
-    if (gameState === GameState.GameOver && publicKey && isTeamWallet && wallet && connected) {
-      console.log('Setting winner for team wallet:', publicKey.toBase58());
-      setWinner(wallet, publicKey).catch((error) => {
-        console.error('Failed to set winner:', error);
-      });
-    }
-  }, [gameState, publicKey, isTeamWallet, wallet, connected]);
 
 
   const loadNewRiddle = useCallback(async () => {
@@ -92,10 +75,10 @@ const App: React.FC = () => {
   }, [gameSession]);
 
   useEffect(() => {
-    if (gameState === GameState.Playing && !currentRiddleData && totalRiddlesPlayedInGame === 0 && !isLoading) {
+    if (gameState === GameState.Playing && !currentRiddleData && totalRiddlesPlayedInGame === 0 && !isLoading && !isPlayingVideo) {
       loadNewRiddle();
     }
-  }, [gameState, totalRiddlesPlayedInGame, isLoading, currentRiddleData, loadNewRiddle]);
+  }, [gameState, totalRiddlesPlayedInGame, isLoading, currentRiddleData, loadNewRiddle, isPlayingVideo]);
 
   const handleStartGame = (players: 1 | 2) => {
     setNumPlayers(players);
@@ -103,9 +86,10 @@ const App: React.FC = () => {
     setCurrentPlayer(1);
     setActivePlayerForAnswer(null);
     setTotalRiddlesPlayedInGame(0);
-    setCurrentRiddleData(null); 
+    setCurrentRiddleData(null);
+    setIsPlayingVideo(false); // Video already playing, now we transition to game
     setGameState(GameState.Playing);
-    loadNewRiddle(); 
+    // Video will end and call handleVideoEnd which will load the first riddle
   };
 
   const handleRevealClue = (index: number) => {
@@ -205,14 +189,73 @@ const App: React.FC = () => {
     setCurrentRiddleData(null); 
     setTotalRiddlesPlayedInGame(0); 
     setApiError(null); 
+    setIsPlayingVideo(false);
     resetRiddleState();
+    // Reset videos
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+    }
+    if (questionVideoRef.current) {
+      questionVideoRef.current.pause();
+      questionVideoRef.current.currentTime = 0;
+    }
     // Create a new game session ID to track a new set of 5 riddles
     setGameSession(Date.now().toString());
   };
 
+  const handleVideoEnd = () => {
+    setIsPlayingVideo(false);
+    // Start loading the first riddle after video ends
+    if (gameState === GameState.Playing) {
+      loadNewRiddle();
+    }
+  };
+
+  // Function to get video source based on current riddle
+  const getQuestionVideo = () => {
+    const currentRiddleNumber = totalRiddlesPlayedInGame + 1;
+    if (currentRiddleNumber === 1) {
+      return '/Question 1.mp4';
+    } else if (currentRiddleNumber === 2) {
+      return 'question 2.mp4';
+    } else if (currentRiddleNumber === 3) {
+      return 'question 3.mp4';
+    } else if (currentRiddleNumber === 4) {
+      return 'question 4.mp4';
+    } else if (currentRiddleNumber === 5) {
+      return 'question 5.mp4';
+    } else {
+      return '/Question 1.mp4'; // fallback
+    }
+  };
+
+  // Function to get background image based on current riddle (for fallback)
+  const getBackgroundImage = () => {
+    const currentRiddleNumber = totalRiddlesPlayedInGame + 1;
+    if (currentRiddleNumber === 1) {
+      return 'Question 1.png';
+    } else if (currentRiddleNumber === 2) {
+      return 'Question 2.png';
+    } else if (currentRiddleNumber === 3) {
+      return 'question 3.png';
+    } else if (currentRiddleNumber === 4) {
+      return 'Question 4.png';
+    } else {
+      return 'u5228372594_make_it_169_very_igh_quality_--ar_9151_--stylize__80f0db7f-2e20-47b0-b3b7-fb025a0c2468_0.png';
+    }
+  };
+
   const renderGameContent = () => {
     if (isLoading && !currentRiddleData && gameState === GameState.Playing && !feedbackModalOpen) {
-      return <div className="flex flex-col items-center justify-center h-64"><LoadingSpinner size="w-16 h-16" /><p className="mt-4 text-lg text-sky-300">Summoning a new riddle...</p></div>;
+      return (
+        <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-blue-400 text-lg">Loading next question...</p>
+          </div>
+        </div>
+      );
     }
     if (apiError && !currentRiddleData) { 
       return <div className="text-center p-8">
@@ -243,7 +286,14 @@ const App: React.FC = () => {
         </div>
       </div>;
     }
-    if (!currentRiddleData) return <div className="flex flex-col items-center justify-center h-64"><LoadingSpinner size="w-16 h-16" /><p className="mt-4 text-lg text-sky-300">Preparing the game...</p></div>;
+    if (!currentRiddleData) return (
+      <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-blue-400 text-lg">Preparing the game...</p>
+        </div>
+      </div>
+    );
 
     const cluesDisabled = isGuessSubmitted || activePlayerForAnswer !== null || isLoading;
 
@@ -264,7 +314,7 @@ const App: React.FC = () => {
                 disabled={revealedClues[index] || cluesDisabled}
                 className={`p-3 rounded-md text-left transition-all duration-200 ease-in-out transform hover:scale-105
                   ${revealedClues[index] 
-                    ? 'bg-slate-700 cursor-default' 
+                    ? 'bg-slate-700/80 cursor-default' 
                     : 'bg-indigo-600 hover:bg-indigo-500 focus:ring-2 focus:ring-indigo-400 focus:ring-opacity-50'}
                   ${cluesDisabled ? 'opacity-60 cursor-not-allowed' : ''}
                 `}
@@ -413,43 +463,84 @@ const App: React.FC = () => {
 
   if (gameState === GameState.NotStarted) {
     return (
-      <div className="bg-slate-800 p-8 rounded-xl shadow-2xl text-center max-w-md mx-auto ring-1 ring-slate-700">
-        <h1 className="text-5xl font-extrabold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-indigo-500">Riddle Me This!</h1>
-        <p className="text-slate-300 mb-8 text-lg">Test your wits against AI-generated riddles. Play solo or challenge a friend!</p>
+      <div className="relative w-full h-screen overflow-hidden" style={{
+        boxShadow: 'inset 0 0 0 2px rgba(0, 191, 255, 0.3), 0 0 20px rgba(0, 0, 0, 0.5)',
+        border: '1px solid rgba(0, 191, 255, 0.2)',
+        borderRadius: '8px',
+        margin: '8px'
+      }}>
+        {/* Video Background */}
+        <video
+          ref={videoRef}
+          muted
+          loop={false}
+          autoPlay
+          className="absolute inset-0 w-full h-full object-cover"
+          onEnded={handleVideoEnd}
+        >
+          <source src="/Landing page.mp4" type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
         
-        {/* Simple Wallet Connection */}
-        <div className="mb-6">
-          <div className="flex justify-center mb-4">
-            <WalletMultiButton className="!bg-gradient-to-r !from-purple-500 !to-pink-500 hover:!from-purple-600 hover:!to-pink-600 !border-0 !rounded-lg !font-semibold !text-white" />
-          </div>
-          {connecting && <p className="text-sm text-yellow-400 mb-4">🔄 Connecting...</p>}
-          {connected && publicKey && (
-            <p className="text-sm text-green-400 mb-4">
-              ✅ Connected: {publicKey.toString().slice(0, 8)}...{publicKey.toString().slice(-8)}
-            </p>
-          )}
-        </div>
-
-        <div className="space-y-4">
-          <button onClick={() => handleStartGame(1)} className="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-6 rounded-lg text-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-opacity-50">
-            1 Player (Turn-based)
-          </button>
-          <button onClick={() => handleStartGame(2)} className="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg text-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-opacity-50">
-            2 Players (Simultaneous)
-          </button>
+        {/* Video Mixing Container */}
+        <div className="absolute inset-0 w-full h-full" style={{ zIndex: 1 }}>
+          {/* Main.mov Transparent Video Overlay - Try different blend modes */}
+          <video
+            muted
+            loop
+            autoPlay
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover video-overlay"
+            style={{ 
+              pointerEvents: 'none'
+            }}
+            onLoadStart={() => console.log('Main video loading started')}
+            onCanPlay={() => console.log('Main video can play')}
+            onError={(e) => console.error('Main video error:', e)}
+          >
+            <source src="/Main.mp4" type="video/mp4" />
+            <source src="/Main.mov" type="video/quicktime" />
+            <source src="/Main.webm" type="video/webm" />
+            Your browser does not support the video tag.
+          </video>
           
-          {/* Simple Wallet Success Message */}
-          {connected && (
-            <div className="mt-4 p-4 bg-green-900/30 border border-green-500/30 rounded-lg">
-              <p className="text-green-400 text-sm font-semibold">✅ Wallet Connected Successfully!</p>
-              <p className="text-slate-300 text-xs mt-1">
-                Your wallet is ready. You can now play the game!
-              </p>
-            </div>
-          )}
+          {/* Alternative blend mode overlay */}
+          <video
+            muted
+            loop
+            autoPlay
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover video-overlay-overlay"
+            style={{ 
+              pointerEvents: 'none',
+              display: 'none' // Hidden by default, can be toggled
+            }}
+            onLoadStart={() => console.log('Main.mov overlay video loading started')}
+            onCanPlay={() => console.log('Main.mov overlay video can play')}
+            onError={(e) => console.error('Main.mov overlay video error:', e)}
+          >
+            <source src="/Main.mov" type="video/quicktime" />
+            <source src="/Main.mov" type="video/mp4" />
+            <source src="/Main.mov" type="video/x-msvideo" />
+            Your browser does not support the video tag.
+          </video>
         </div>
         
-        <p className="mt-6 text-sm text-green-500">✅ Ready to play!</p>
+        {/* Video Overlay for readability - reduced opacity */}
+        <div className="absolute inset-0 bg-black/10"></div>
+        
+        {/* Main Menu Content - Black Start Button */}
+        <div className="relative z-10 flex items-end justify-center min-h-screen pb-20">
+          <button 
+            onClick={() => handleStartGame(1)} 
+            className="bg-black border-2 border-gray-600 text-white font-bold py-3 px-8 text-xl transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 rounded-lg"
+            style={{
+              boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
+            }}
+          >
+            START
+          </button>
+        </div>
       </div>
     );
   }
@@ -461,7 +552,13 @@ const App: React.FC = () => {
     const p1FinalScore = scores.player1;
     const p2FinalScore = scores.player2;
     return (
-      <div className="bg-slate-800 p-8 rounded-xl shadow-2xl text-center max-w-lg mx-auto ring-1 ring-slate-700">
+      <div className="relative w-full min-h-screen overflow-hidden flex items-center justify-center" style={{
+        boxShadow: 'inset 0 0 0 2px rgba(0, 191, 255, 0.3), 0 0 20px rgba(0, 0, 0, 0.5)',
+        border: '1px solid rgba(0, 191, 255, 0.2)',
+        borderRadius: '8px',
+        margin: '8px'
+      }}>
+        <div className="bg-slate-800 p-8 rounded-xl shadow-2xl text-center max-w-lg mx-auto ring-1 ring-slate-700">
         <h1 className="text-4xl font-bold mb-6 text-sky-400">Game Over!</h1>
         {numPlayers === 2 && winner !== "It's a Tie!" && <p className="text-2xl text-amber-400 mb-2">{winner} wins!</p>}
         {winner === "It's a Tie!" && <p className="text-2xl text-amber-400 mb-2">It's a Tie!</p>}
@@ -474,21 +571,12 @@ const App: React.FC = () => {
           <h2 className="text-2xl text-white mb-2">
             Congrats, {numPlayers === 1 ? 'Player 1' : (scores.player1 > scores.player2 ? 'Player 1' : 'Player 2')} Wins!
           </h2>
-          <p className="text-white mb-2">Prize Pot: {prizeBalance.toFixed(4)} SOL</p>
           {connected ? (
             <button
-              onClick={() => {
-                if (wallet && publicKey) {
-                  console.log('Claiming prize for:', publicKey.toBase58());
-                  claimPrize(wallet).catch((error) => {
-                    console.error('Failed to claim prize:', error);
-                  });
-                }
-              }}
+              onClick={() => console.log('Claim Prize clicked')} // Placeholder, we'll add logic later
               className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-              disabled={!publicKey}
             >
-              Claim Prize!
+              Claim Pump.fun Fees Prize!
             </button>
           ) : (
             <p className="text-white">Connect wallet to claim prize!</p>
@@ -501,45 +589,103 @@ const App: React.FC = () => {
         >
           Play Again?
         </button>
+        </div>
       </div>
     );
   }
   
-  return (
-    <div className="bg-slate-800/80 backdrop-blur-md p-6 sm:p-8 rounded-xl shadow-2xl w-full ring-1 ring-slate-700">
-      {/* Wallet Status Bar */}
-      <div className="flex justify-between items-center mb-4 p-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg">
-        <h1 className="text-white text-lg font-bold">Riddle Me This!</h1>
-        <div className="flex items-center gap-2">
-          {connected && publicKey ? (
-            <>
-              <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-              <span className="text-white text-sm">
-                Connected: {publicKey?.toBase58().slice(0, 4)}...{publicKey?.toBase58().slice(-4)}
-              </span>
-            </>
-          ) : (
-              <span className="text-yellow-300 text-sm">Connect Wallet to Play!</span>
-          )}
-          <WalletMultiButton className="bg-white text-blue-500 px-2 py-1 rounded" />
-        </div>
-      </div>
 
-      <Scoreboard />
-      {renderGameContent()}
-      <Modal
-        isOpen={feedbackModalOpen}
-        onClose={handleModalCloseAndProceed}
-        title={feedbackModalTitle}
+  return (
+    <div className="relative w-full min-h-screen overflow-hidden" style={{
+      boxShadow: 'inset 0 0 0 2px rgba(0, 191, 255, 0.3), 0 0 20px rgba(0, 0, 0, 0.5)',
+      border: '1px solid rgba(0, 191, 255, 0.2)',
+      borderRadius: '8px',
+      margin: '8px'
+    }}>
+      {/* Question Video Background */}
+      {gameState === GameState.Playing && currentRiddleData && (
+        <video
+          ref={questionVideoRef}
+          muted
+          loop
+          autoPlay
+          className="absolute inset-0 w-full h-full object-cover"
+        >
+          <source src={getQuestionVideo()} type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
+      )}
+      
+      {/* Fallback Background Image */}
+      {(!currentRiddleData || gameState !== GameState.Playing) && (
+        <div 
+          className="absolute inset-0 w-full h-full"
+          style={{
+            backgroundImage: `url('${getBackgroundImage()}')`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
+          }}
+        />
+      )}
+      
+      {/* Main.mov Transparent Video Overlay - Always visible */}
+      <video
+        muted
+        loop
+        autoPlay
+        className="absolute inset-0 w-full h-full object-cover mix-blend-screen"
+        style={{ 
+          zIndex: 1,
+          pointerEvents: 'none'
+        }}
       >
-        <p>{feedbackModalMessage}</p>
-        {isLoading && lastGuessEvaluation !== null && gameState === GameState.Playing && (
-            <div className="mt-4 flex flex-col items-center">
-                <LoadingSpinner size="w-8 h-8" /> 
-                <p className="text-sm text-slate-400 mt-2">Loading next riddle...</p>
-            </div>
-        )}
-      </Modal>
+        <source src="/Main.mov" type="video/quicktime" />
+        <source src="/Main.mov" type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
+      
+      {/* Video Overlay for readability */}
+      <div className="absolute inset-0 bg-black/20"></div>
+
+      <div className="relative z-10 p-2 sm:p-4">
+        {/* Wallet Status Bar */}
+        <div className="relative flex justify-between items-center mb-4 p-3 bg-gradient-to-r from-blue-500/90 to-purple-500/90 backdrop-blur-sm rounded-lg border border-cyan-400/30">
+          <h1 className="text-white text-lg font-bold">Riddle Me This!</h1>
+          <div className="flex items-center gap-2">
+            {connected && publicKey ? (
+              <>
+                <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                <span className="text-white text-sm">
+                  Connected: {publicKey?.toBase58().slice(0, 4)}...{publicKey?.toBase58().slice(-4)}
+                </span>
+              </>
+            ) : (
+                <span className="text-yellow-300 text-sm">Connect Wallet to Play!</span>
+            )}
+            <WalletMultiButton className="bg-white text-blue-500 px-2 py-1 rounded" />
+          </div>
+        </div>
+
+        <div className="relative z-10">
+          <Scoreboard />
+          {renderGameContent()}
+        </div>
+        
+        <Modal
+          isOpen={feedbackModalOpen}
+          onClose={handleModalCloseAndProceed}
+          title={feedbackModalTitle}
+        >
+          <p>{feedbackModalMessage}</p>
+          {isLoading && lastGuessEvaluation !== null && gameState === GameState.Playing && (
+              <div className="mt-4 flex flex-col items-center">
+                  <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+                  <p className="text-sm text-blue-400">Loading next riddle...</p>
+              </div>
+          )}
+        </Modal>
+      </div>
     </div>
   );
 };
